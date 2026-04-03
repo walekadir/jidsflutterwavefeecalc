@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0c0a" />
+  <meta name="description" content="Jid's Flutterwave fee calculator for Nigerian businesses and freelancers. Know your true cost before you charge." />
+  <title>Jid's Flutterwave Fee Calculator</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0c0a;
+      --surface: #111410;
+      --surface2: #181c16;
+      --border: #232820;
+      --green: #b5f23d;
+      --green-dim: #7aaa1e;
+      --green-glow: rgba(181,242,61,0.10);
+      --text: #e8edd8;
+      --muted: #6b7560;
+      --danger: #ff6b6b;
+      --amber: #f5c542;
+      --blue: #5bc0eb;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px 100px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(181,242,61,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(181,242,61,0.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+      pointer-events: none; z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: fixed; top: -160px; left: 50%;
+      transform: translateX(-50%);
+      width: 700px; height: 400px;
+      background: radial-gradient(ellipse, rgba(181,242,61,0.06) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+
+    .wrapper {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 620px;
+    }
+
+    /* ── INSTALL BANNER ─────────────────── */
+    #installBanner {
+      display: none;
+      align-items: center; justify-content: space-between;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid rgba(181,242,61,0.2);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-size: 11px; color: var(--muted);
+    }
+    #installBanner.show { display: flex; }
+    #installBanner strong { color: var(--green); }
+    .install-btn {
+      padding: 7px 14px;
+      background: var(--green); border: none; border-radius: 6px;
+      color: #0a0c0a;
+      font-family: 'Syne', sans-serif;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
+      cursor: pointer; white-space: nowrap;
+      flex-shrink: 0;
+    }
+    #dismissInstall {
+      background: none; border: none; color: var(--muted);
+      font-size: 16px; cursor: pointer; flex-shrink: 0;
+    }
+
+    /* ── HEADER ─────────────────────────── */
+    header { margin-bottom: 36px; }
+    .logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+    .logo-mark {
+      width: 30px; height: 30px;
+      background: var(--green); border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-mark svg { width: 16px; height: 16px; }
+    .logo-text {
+      font-family: 'Syne', sans-serif;
+      font-size: 11px; font-weight: 700;
+      color: var(--muted); letter-spacing: 0.18em; text-transform: uppercase;
+    }
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(26px, 6vw, 40px);
+      font-weight: 800; line-height: 1.05; letter-spacing: -0.03em;
+    }
+    h1 span { color: var(--green); }
+    .subtitle {
+      margin-top: 8px; font-size: 11px;
+      color: var(--muted); line-height: 1.7; letter-spacing: 0.02em;
+    }
+
+    /* ── FX TICKER ──────────────────────── */
+    .fx-bar {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      font-size: 10px;
+    }
+    .fx-label { color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+    .fx-rate {
+      color: var(--green);
+      font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 11px;
+    }
+    .fx-sep { color: var(--border); }
+    .fx-time { color: var(--muted); margin-left: auto; font-size: 9px; }
+    .fx-loading { color: var(--muted); font-size: 10px; font-style: italic; }
+
+    /* ── CARD ───────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 26px;
+      margin-bottom: 16px;
+      position: relative; overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(181,242,61,0.25), transparent);
+    }
+    .card-label {
+      font-size: 10px; font-weight: 500;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 20px;
+    }
+
+    /* ── FORM ───────────────────────────── */
+    .field { margin-bottom: 18px; }
+    .field label {
+      display: block; font-size: 10px;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 8px;
+    }
+    .input-wrap { position: relative; display: flex; align-items: center; }
+    .currency-prefix {
+      position: absolute; left: 13px;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px; font-weight: 700;
+      color: var(--green); pointer-events: none; z-index: 1;
+    }
+    input[type="number"], input[type="text"], select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 14px;
+      padding: 13px 13px 13px 36px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    select {
+      padding-left: 13px; cursor: pointer; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7560' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 13px center;
+    }
+    input:focus, select:focus {
+      border-color: var(--green-dim);
+      box-shadow: 0 0 0 3px var(--green-glow);
+    }
+    input.error { border-color: var(--danger) !important; }
+    .error-msg { font-size: 10px; color: var(--danger); margin-top: 5px; display: none; }
+    .error-msg.show { display: block; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* ── REVERSE TOGGLE ─────────────────── */
+    .direction-toggle {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 18px;
+      cursor: pointer;
+      transition: border-color 0.18s;
+    }
+    .direction-toggle:hover { border-color: var(--green-dim); }
+    .direction-toggle input[type="checkbox"] { display: none; }
+    .toggle-switch {
+      width: 36px; height: 20px;
+      background: var(--border); border-radius: 20px;
+      position: relative; flex-shrink: 0;
+      transition: background 0.2s;
+    }
+    .toggle-switch::after {
+      content: '';
+      position: absolute; top: 3px; left: 3px;
+      width: 14px; height: 14px;
+      background: var(--muted); border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .direction-toggle.on .toggle-switch { background: var(--green-glow); border: 1px solid var(--green); }
+    .direction-toggle.on .toggle-switch::after { transform: translateX(16px); background: var(--green); }
+    .toggle-label { font-size: 11px; color: var(--muted); line-height: 1.4; }
+    .toggle-label strong { color: var(--text); display: block; font-size: 12px; margin-bottom: 2px; }
+
+    /* ── TOGGLE PILLS ───────────────────── */
+    .toggle-group { display: flex; gap: 6px; flex-wrap: wrap; }
+    .toggle-pill {
+      flex: 1; min-width: 80px;
+      padding: 9px 10px;
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; letter-spacing: 0.05em;
+      cursor: pointer; transition: all 0.15s; text-align: center;
+    }
+    .toggle-pill:hover { border-color: var(--green-dim); color: var(--text); }
+    .toggle-pill.active { background: var(--green-glow); border-color: var(--green); color: var(--green); }
+
+    /* ── BUTTONS ────────────────────────── */
+    .btn-primary {
+      width: 100%; padding: 15px;
+      background: var(--green); border: none; border-radius: 10px;
+      color: #0a0c0a;
+      font-family: 'Syne', sans-serif;
+      font-size: 13px; font-weight: 800;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      cursor: pointer; margin-top: 4px;
+      transition: all 0.18s;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(181,242,61,0.22); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 10px 16px;
+      background: transparent; border: 1px solid var(--border); border-radius: 8px;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-ghost:hover { border-color: var(--green-dim); color: var(--green); }
+    .btn-ghost svg { width: 13px; height: 13px; }
+    .btn-ghost.copied { border-color: var(--green); color: var(--green); }
+
+    /* ── TAB NAV ────────────────────────── */
+    .tab-nav {
+      display: flex; gap: 2px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 4px; margin-bottom: 0;
+    }
+    .tab-btn {
+      flex: 1; padding: 10px 8px;
+      background: transparent; border: none; border-radius: 9px;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.18s; white-space: nowrap;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { background: var(--surface2); color: var(--green); border: 1px solid var(--border); }
+
+    /* ── RESULTS BASE ───────────────────── */
+    .results-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      pointer-events: none; margin-bottom: 16px;
+    }
+    .results-card.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+    .results-header {
+      padding: 14px 22px;
+      background: var(--surface2); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .results-header .label { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+    .product-tag {
+      font-size: 9px; font-weight: 500; letter-spacing: 0.1em;
+      padding: 3px 9px; border-radius: 20px;
+      background: var(--green-glow); color: var(--green); border: 1px solid rgba(181,242,61,0.2);
+    }
+
+    .result-rows { padding: 4px 0; }
+    .result-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 22px; border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+      animation: slideIn 0.25s ease both;
+    }
+    .result-row:last-child { border-bottom: none; }
+    .result-row:hover { background: rgba(181,242,61,0.02); }
+    .result-row:nth-child(1) { animation-delay: 0.04s; }
+    .result-row:nth-child(2) { animation-delay: 0.08s; }
+    .result-row:nth-child(3) { animation-delay: 0.12s; }
+    .result-row:nth-child(4) { animation-delay: 0.16s; }
+    .result-row:nth-child(5) { animation-delay: 0.20s; }
+
+    .row-label { font-size: 11px; color: var(--muted); letter-spacing: 0.03em; }
+    .row-value { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--text); }
+    .row-value.highlight { color: var(--green); font-size: 17px; }
+    .row-value.fee { color: var(--danger); }
+    .row-value.blue { color: var(--blue); }
+
+    /* ── FX RESULT ROW ──────────────────── */
+    .fx-result-row {
+      margin: 0 22px 14px;
+      padding: 12px 15px;
+      background: rgba(91,192,235,0.07);
+      border: 1px solid rgba(91,192,235,0.2);
+      border-radius: 8px;
+      font-size: 11px; color: var(--blue); line-height: 1.5;
+    }
+    .fx-result-row strong { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; }
+
+    /* ── DONUT CHART ────────────────────── */
+    .donut-wrap {
+      display: flex; align-items: center; gap: 20px;
+      padding: 16px 22px 0;
+    }
+    .donut-svg { flex-shrink: 0; }
+    .donut-legend { flex: 1; }
+    .legend-item {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 10px; color: var(--muted); margin-bottom: 8px;
+    }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .legend-val { font-family: 'Syne', sans-serif; font-weight: 700; color: var(--text); font-size: 12px; }
+
+    /* ── SETTLEMENT + REC ───────────────── */
+    .settlement-banner {
+      margin: 0 22px 14px;
+      padding: 11px 14px;
+      background: rgba(245,197,66,0.06); border: 1px solid rgba(245,197,66,0.18); border-radius: 8px;
+      display: flex; align-items: flex-start; gap: 9px;
+    }
+    .settlement-banner .icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+    .settlement-banner .text { font-size: 10px; color: var(--amber); line-height: 1.5; }
+    .recommendation {
+      margin: 0 22px 18px; padding: 13px 15px;
+      background: var(--green-glow); border: 1px solid rgba(181,242,61,0.13); border-radius: 10px;
+    }
+    .recommendation .rec-label { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--green-dim); margin-bottom: 5px; }
+    .recommendation .rec-text { font-size: 11px; color: var(--text); line-height: 1.5; }
+
+    /* ── EXPORT BAR ─────────────────────── */
+    .export-bar {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      padding: 14px 22px; border-top: 1px solid var(--border);
+    }
+
+    /* ── COMPARE GRID ───────────────────── */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px; padding: 18px 22px 20px;
+    }
+    .compare-cell {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+      padding: 14px 12px; text-align: center; cursor: default;
+      transition: border-color 0.18s, transform 0.18s;
+      animation: slideIn 0.25s ease both;
+    }
+    .compare-cell:hover { border-color: var(--green-dim); transform: translateY(-2px); }
+    .compare-cell.best { border-color: var(--green); background: var(--green-glow); }
+    .compare-cell.unavailable { opacity: 0.35; }
+    .cell-method { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .cell-fee { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; color: var(--danger); margin-bottom: 4px; }
+    .compare-cell.best .cell-fee { color: var(--green); }
+    .cell-receive { font-size: 10px; color: var(--muted); margin-bottom: 6px; }
+    .cell-settle { font-size: 9px; color: var(--muted); }
+    .best-badge {
+      display: inline-block; font-size: 8px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+      padding: 2px 7px; border-radius: 20px; background: var(--green); color: #0a0c0a; margin-top: 6px;
+    }
+
+    /* ── BULK ───────────────────────────── */
+    .bulk-summary { padding: 18px 22px 20px; }
+    .bulk-big { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; color: var(--green); letter-spacing: -0.03em; margin-bottom: 4px; }
+    .bulk-sub { font-size: 11px; color: var(--muted); margin-bottom: 18px; }
+    .bulk-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .bulk-row:last-child { border-bottom: none; }
+    .bulk-row .lbl { font-size: 11px; color: var(--muted); }
+    .bulk-row .val { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--text); }
+    .bulk-row .val.g { color: var(--green); }
+    .bulk-row .val.r { color: var(--danger); }
+
+    /* ── ANIMATIONS ─────────────────────── */
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-5px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes pulse-green {
+      0%   { box-shadow: 0 0 0 0 rgba(181,242,61,0.4); }
+      70%  { box-shadow: 0 0 0 10px rgba(181,242,61,0); }
+      100% { box-shadow: 0 0 0 0 rgba(181,242,61,0); }
+    }
+    .pulse { animation: pulse-green 0.45s ease; }
+
+    /* ── FOOTNOTE ───────────────────────── */
+    .footnote { text-align: center; font-size: 10px; color: var(--muted); margin-top: 28px; line-height: 1.7; }
+    .footnote a { color: var(--green-dim); text-decoration: none; }
+
+    /* ══════════════════════════════════════
+       PRINT STYLES
+    ══════════════════════════════════════ */
+    @media print {
+      * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      body { background: #fff !important; color: #111 !important; padding: 0 !important; }
+      body::before, body::after { display: none !important; }
+      .wrapper { max-width: 100% !important; }
+      header, .tab-nav, .card, .fx-bar, #installBanner,
+      .footnote, .export-bar, .btn-ghost,
+      #singleResult, #compareResult, #bulkResult { display: none !important; }
+      .print-receipt { display: block !important; }
+
+      .receipt-page { width: 100%; max-width: 540px; margin: 0 auto; padding: 32px; }
+      .receipt-header {
+        display: flex; justify-content: space-between; align-items: flex-start;
+        padding-bottom: 18px; border-bottom: 2px solid #111; margin-bottom: 24px;
+      }
+      .receipt-brand { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: #111; }
+      .receipt-brand span { color: #5a8c0a; }
+      .receipt-meta { text-align: right; font-size: 10px; color: #666; line-height: 1.6; }
+      .receipt-badge {
+        display: inline-block; background: #f0f7e0; color: #4a8000;
+        border: 1px solid #b5e04a; padding: 3px 9px; border-radius: 4px;
+        font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 20px;
+      }
+      .receipt-section-title { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: #999; margin-bottom: 10px; }
+      .receipt-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+      .receipt-table td { padding: 9px 0; border-bottom: 1px solid #eee; font-size: 12px; color: #333; }
+      .receipt-table td:last-child { text-align: right; font-weight: 600; color: #111; }
+      .receipt-table tr.total td { padding-top: 12px; border-top: 2px solid #111; border-bottom: none; font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; }
+      .receipt-table tr.fee-row td:last-child { color: #cc3c3c; }
+      .receipt-table tr.receive-row td:last-child { color: #4a8000; font-size: 18px; }
+      .receipt-notice { font-size: 10px; color: #999; line-height: 1.5; border-top: 1px solid #eee; padding-top: 16px; margin-top: 8px; }
+    }
+    .print-receipt { display: none; }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- ── INSTALL BANNER ─── -->
+  <div id="installBanner">
+    <span><strong>Install this app</strong> — add to your home screen for quick access offline</span>
+    <button class="install-btn" id="installBtn">Install</button>
+    <button id="dismissInstall">×</button>
+  </div>
+
+  <!-- ── HEADER ─── -->
+  <header>
+    <div class="logo-row">
+      <div class="logo-mark">
+        <svg viewBox="0 0 16 16" fill="none">
+          <path d="M2 8h12M8 2v12" stroke="#0a0c0a" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="logo-text">Jid's Flutterwave Fee Calculator v3</span>
+    </div>
+    <h1>Know Your<br/><span>True Cost</span></h1>
+    <p class="subtitle">Jid's Flutterwave fees calculator for Nigerian businesses &amp; freelancers.<br/>
+    Reverse calc · Live FX · Compare · Bulk · PDF receipt · Installable PWA.</p>
+  </header>
+
+  <!-- ── FX TICKER ─── -->
+  <div class="fx-bar" id="fxBar">
+    <span class="fx-label">Live FX</span>
+    <span class="fx-loading" id="fxStatus">Fetching rates…</span>
+    <span class="fx-time" id="fxTime"></span>
+  </div>
+
+  <!-- ── INPUT CARD ─── -->
+  <div class="card" id="inputCard">
+    <div class="card-label">Transaction Details</div>
+
+    <!-- Reverse toggle -->
+    <label class="direction-toggle" id="directionToggle" for="reverseCheck">
+      <input type="checkbox" id="reverseCheck" />
+      <div class="toggle-switch"></div>
+      <div class="toggle-label">
+        <strong id="directionLabel">Forward: I want to charge…</strong>
+        <span id="directionSub">Toggle to calculate what to charge so YOU receive a specific amount</span>
+      </div>
+    </label>
+
+    <div class="field-row">
+      <div class="field">
+        <label id="amountLabel">Amount to Charge</label>
+        <div class="input-wrap">
+          <span class="currency-prefix" id="currencyPrefix">₦</span>
+          <input type="number" id="amountInput" placeholder="0.00" min="0" step="0.01" />
+        </div>
+        <div class="error-msg" id="amountError">Enter an amount &gt; 0</div>
+      </div>
+      <div class="field">
+        <label>Currency</label>
+        <select id="currencySelect">
+          <option value="NGN">NGN — ₦ Naira</option>
+          <option value="USD">USD — $ Dollar</option>
+          <option value="GBP">GBP — £ Pound</option>
+          <option value="EUR">EUR — € Euro</option>
+          <option value="KES">KES — KSh Shilling</option>
+          <option value="GHS">GHS — ₵ Cedi</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Payment Method</label>
+      <div class="toggle-group" id="paymentType">
+        <button class="toggle-pill active" data-value="card">Card</button>
+        <button class="toggle-pill" data-value="bank_transfer">Bank Transfer</button>
+        <button class="toggle-pill" data-value="ussd">USSD</button>
+        <button class="toggle-pill" data-value="mobile_money">Mobile Money</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Business Plan</label>
+      <div class="toggle-group" id="businessType">
+        <button class="toggle-pill active" data-value="standard">Standard</button>
+        <button class="toggle-pill" data-value="starter">Starter (+0.5%)</button>
+      </div>
+    </div>
+
+    <!-- Bulk fields -->
+    <div id="bulkFields" style="display:none;">
+      <div class="field-row">
+        <div class="field">
+          <label>No. of Transactions</label>
+          <div class="input-wrap">
+            <span class="currency-prefix" style="color:var(--muted);font-size:12px;">#</span>
+            <input type="number" id="txnCount" placeholder="e.g. 200" min="1" step="1" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Business Name (receipt)</label>
+          <div class="input-wrap">
+            <input type="text" id="businessName" placeholder="e.g. Jid Stores" style="padding-left:13px;" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mode tabs -->
+    <div class="tab-nav" style="margin-top:16px;margin-bottom:16px;" id="modeNav">
+      <button class="tab-btn active" onclick="switchMode('single',this)">Single</button>
+      <button class="tab-btn" onclick="switchMode('compare',this)">Compare All</button>
+      <button class="tab-btn" onclick="switchMode('bulk',this)">Bulk / Invoice</button>
+    </div>
+
+    <button class="btn-primary" id="calcBtn" onclick="calculate()">
+      Calculate →
+    </button>
+  </div>
+
+  <!-- ══ SINGLE RESULT ══ -->
+  <div class="results-card" id="singleResult">
+    <div class="results-header">
+      <span class="label" id="singleModeLabel">Breakdown</span>
+      <span class="product-tag" id="singleTag">Card</span>
+    </div>
+    <div class="result-rows" id="singleRows"></div>
+    <div class="donut-wrap" id="donutWrap"></div>
+    <div style="height:16px;"></div>
+    <div class="fx-result-row" id="fxResultRow" style="display:none;"></div>
+    <div class="settlement-banner">
+      <span class="icon">⏱</span>
+      <span class="text" id="singleSettleText"></span>
+    </div>
+    <div class="recommendation">
+      <div class="rec-label">Recommendation</div>
+      <div class="rec-text" id="singleRecText"></div>
+    </div>
+    <div class="export-bar">
+      <button class="btn-ghost" id="copyBtn" onclick="copyResult()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <rect x="5" y="5" width="9" height="9" rx="1"/><path d="M3 11H2a1 1 0 01-1-1V2a1 1 0 011-1h8a1 1 0 011 1v1"/>
+        </svg>
+        <span id="copyBtnLabel">Copy Result</span>
+      </button>
+      <button class="btn-ghost" onclick="exportPDF('single')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M8 2v8M5 7l3 3 3-3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2"/>
+        </svg>
+        Export PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ COMPARE RESULT ══ -->
+  <div class="results-card" id="compareResult">
+    <div class="results-header">
+      <span class="label">All Methods — Side by Side</span>
+      <span class="product-tag" id="compareTag">NGN</span>
+    </div>
+    <div class="compare-grid" id="compareGrid"></div>
+    <div class="export-bar">
+      <button class="btn-ghost" onclick="exportPDF('compare')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M8 2v8M5 7l3 3 3-3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2"/>
+        </svg>
+        Export PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ BULK RESULT ══ -->
+  <div class="results-card" id="bulkResult">
+    <div class="results-header">
+      <span class="label">Bulk / Invoice Estimate</span>
+      <span class="product-tag" id="bulkTag">Bulk</span>
+    </div>
+    <div class="bulk-summary">
+      <div class="bulk-big" id="bulkNet"></div>
+      <div class="bulk-sub" id="bulkSubtitle"></div>
+      <div class="bulk-rows" id="bulkRows"></div>
+    </div>
+    <div class="export-bar">
+      <button class="btn-ghost" onclick="exportPDF('bulk')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M8 2v8M5 7l3 3 3-3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2"/>
+        </svg>
+        Export PDF
+      </button>
+    </div>
+  </div>
+
+  <p class="footnote">
+    Estimates based on publicly available Flutterwave pricing (2025–2026).<br/>
+    Confirm current rates at <a href="https://flutterwave.com/ng" target="_blank">flutterwave.com/ng</a> · Not affiliated with Flutterwave Inc.
+  </p>
+</div>
+
+<!-- ══ PRINT RECEIPT ══ -->
+<div class="print-receipt" id="printReceipt">
+  <div class="receipt-page">
+    <div class="receipt-header">
+      <div>
+        <div class="receipt-brand">FW <span>Fee</span> Calculator</div>
+        <div style="font-size:10px;color:#888;margin-top:3px;">jidsflutterwavefeecalculator.vercel.app</div>
+      </div>
+      <div class="receipt-meta" id="receiptMeta"></div>
+    </div>
+    <div class="receipt-badge" id="receiptBadge">Single Transaction</div>
+    <div class="receipt-section-title">Transaction Breakdown</div>
+    <table class="receipt-table" id="receiptTable"></table>
+    <div class="receipt-notice">
+      Estimates based on publicly available Flutterwave pricing (2025–2026).
+      Always confirm rates at flutterwave.com/ng. Not affiliated with Flutterwave Inc.<br/>
+      Generated: <span id="receiptDate"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════
+const CURRENCY_SYMBOLS = { NGN:'₦', USD:'$', GBP:'£', EUR:'€', KES:'KSh ', GHS:'₵' };
+
+const FEE_RULES = {
+  card: {
+    label: 'Card Payment',
+    NGN: { rate:0.014, cap:2000 },
+    USD: { rate:0.038 }, GBP: { rate:0.038 },
+    EUR: { rate:0.038 }, KES: { rate:0.038 }, GHS: { rate:0.038 },
+    settlement: { NGN:'T+1 business day', _intl:'T+2–3 business days' },
+  },
+  bank_transfer: {
+    label: 'Bank Transfer',
+    NGN: { flat:50 },
+    USD: { rate:0.01 }, GBP: { rate:0.01 }, EUR: { rate:0.01 },
+    KES: null, GHS: null,
+    settlement: { NGN:'Instant – T+1', _intl:'T+2 business days' },
+  },
+  ussd: {
+    label: 'USSD',
+    NGN: { flat:20 },
+    USD:null, GBP:null, EUR:null, KES:null, GHS:null,
+    settlement: { NGN:'Instant' },
+  },
+  mobile_money: {
+    label: 'Mobile Money',
+    NGN:null, USD:null, GBP:null,
+    EUR:{ rate:0.01 }, KES:{ rate:0.01 }, GHS:{ rate:0.01 },
+    settlement: { _intl:'Instant – T+1' },
+  },
+};
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let selectedPayment = 'card';
+let selectedBusiness = 'standard';
+let currentMode = 'single';
+let isReverse = false;
+let fxRates = {};       // { USD: 1640, GBP: 2100, ... } vs NGN
+let fxCacheTime = 0;
+let lastCalc = {};
+let deferredInstall = null;
+
+// ═══════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════
+function fmt(amount, currency) {
+  const sym = CURRENCY_SYMBOLS[currency] || currency + ' ';
+  return sym + Math.max(amount, 0).toLocaleString('en-NG', { minimumFractionDigits:2, maximumFractionDigits:2 });
+}
+
+function computeFee(method, currency, amount, business) {
+  const rule = FEE_RULES[method];
+  if (!rule) return null;
+  const cr = rule[currency];
+  if (!cr) return null;
+
+  let fee = 0, feeNote = '';
+  if (cr.flat !== undefined) {
+    fee = cr.flat;
+    feeNote = `Flat ${fmt(cr.flat, currency)}`;
+  } else if (cr.rate !== undefined) {
+    fee = amount * cr.rate;
+    if (cr.cap && fee > cr.cap) {
+      fee = cr.cap;
+      feeNote = `${(cr.rate*100).toFixed(1)}% (capped at ${fmt(cr.cap, currency)})`;
+    } else {
+      feeNote = `${(cr.rate*100).toFixed(1)}% of amount`;
+    }
+  }
+
+  let surcharge = 0;
+  if (business === 'starter' && method === 'card' && currency === 'NGN') {
+    surcharge = amount * 0.005;
+    feeNote += ' + 0.5% starter';
+  }
+
+  const total = fee + surcharge;
+  const receive = amount - total;
+  const effectiveRate = ((total / amount) * 100).toFixed(2);
+
+  const settlObj = rule.settlement || {};
+  const settlement = currency === 'NGN'
+    ? (settlObj.NGN || settlObj._intl || 'Varies')
+    : (settlObj._intl || settlObj.NGN || 'Varies');
+
+  return { fee: total, feeNote, receive, effectiveRate, settlement };
+}
+
+// Reverse: given desired receive, find what to charge
+function reverseCalc(method, currency, desired, business) {
+  const rule = FEE_RULES[method];
+  if (!rule) return null;
+  const cr = rule[currency];
+  if (!cr) return null;
+
+  let charge = 0;
+
+  if (cr.flat !== undefined) {
+    // charge = desired + flat fee
+    charge = desired + cr.flat;
+    if (business === 'starter' && method === 'card' && currency === 'NGN') {
+      charge = desired + cr.flat + desired * 0.005; // approx
+    }
+  } else if (cr.rate !== undefined) {
+    let rate = cr.rate;
+    if (business === 'starter' && method === 'card' && currency === 'NGN') rate += 0.005;
+    charge = desired / (1 - rate);
+    // Check if fee would be capped
+    if (cr.cap) {
+      const potentialFee = desired * rate / (1 - rate);
+      if (potentialFee >= cr.cap) {
+        charge = desired + cr.cap;
+      }
+    }
+  }
+
+  const feeResult = computeFee(method, currency, charge, business);
+  return { charge, ...feeResult };
+}
+
+function getRecommendation(method, currency, amount, fee) {
+  const pct = (fee / amount) * 100;
+  if (currency === 'NGN') {
+    if (method === 'card' && amount > 100000)
+      return 'For large NGN collections above ₦100k, Bank Transfer at flat ₦50 saves significantly vs 1.4% card rate.';
+    if (method === 'ussd')
+      return 'USSD is great for customers without smartphones. Flat ₦20 keeps costs predictable on small-ticket sales.';
+    if (method === 'bank_transfer')
+      return 'Bank Transfer is ideal for B2B invoicing. Flat ₦50 fee offers excellent value at any amount size.';
+    if (method === 'card' && amount <= 20000)
+      return 'Card is convenient for small NGN amounts. The 1.4% rate (capped at ₦2,000) is reasonable for everyday use.';
+  }
+  if (pct >= 3.5)
+    return `At ${pct.toFixed(1)}% effective rate, consider negotiating enterprise pricing with Flutterwave for high-volume international collections.`;
+  return `${currency} card payments are your most reliable option via Flutterwave. Explore new banking products at flutterwave.com/ng/bank.`;
+}
+
+// ═══════════════════════════════════════
+// LIVE FX
+// ═══════════════════════════════════════
+const FX_CACHE_MS = 60 * 60 * 1000; // 1 hour
+
+async function fetchFX() {
+  const now = Date.now();
+  // Try localStorage cache
+  try {
+    const cached = localStorage.getItem('fw_fx_cache');
+    if (cached) {
+      const { rates, ts } = JSON.parse(cached);
+      if (now - ts < FX_CACHE_MS) {
+        fxRates = rates;
+        fxCacheTime = ts;
+        renderFXBar(true);
+        return;
+      }
+    }
+  } catch(e) {}
+
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/NGN');
+    const data = await res.json();
+    if (data && data.rates) {
+      // We want X currency per 1 NGN, but we want NGN per 1 X currency
+      // data.rates[USD] = NGN per 1 USD inverted = how many NGN = 1 USD
+      fxRates = {
+        USD: 1 / data.rates.USD,
+        GBP: 1 / data.rates.GBP,
+        EUR: 1 / data.rates.EUR,
+        KES: 1 / data.rates.KES,
+        GHS: 1 / data.rates.GHS,
+      };
+      fxCacheTime = now;
+      try { localStorage.setItem('fw_fx_cache', JSON.stringify({ rates: fxRates, ts: now })); } catch(e) {}
+      renderFXBar(false);
+    }
+  } catch(e) {
+    document.getElementById('fxStatus').textContent = 'FX unavailable (offline)';
+  }
+}
+
+function renderFXBar(fromCache) {
+  const bar = document.getElementById('fxBar');
+  const pairs = Object.entries(fxRates)
+    .filter(([k]) => ['USD','GBP','EUR'].includes(k))
+    .map(([k,v]) => `<span class="fx-rate">1${k} = ₦${Math.round(v).toLocaleString()}</span>`)
+    .join('<span class="fx-sep"> · </span>');
+
+  document.getElementById('fxStatus').innerHTML = pairs;
+  const t = new Date(fxCacheTime);
+  document.getElementById('fxTime').textContent =
+    `Updated ${t.getHours()}:${String(t.getMinutes()).padStart(2,'0')}${fromCache?' (cached)':''}`;
+}
+
+// ═══════════════════════════════════════
+// DONUT CHART (pure SVG/CSS)
+// ═══════════════════════════════════════
+function renderDonut(fee, receive, currency) {
+  const total = fee + receive;
+  const feeRatio = fee / total;
+  const r = 34, cx = 40, cy = 40, strokeW = 10;
+  const circ = 2 * Math.PI * r;
+  const feeDash = feeRatio * circ;
+  const receiveDash = circ - feeDash;
+
+  document.getElementById('donutWrap').innerHTML = `
+    <svg class="donut-svg" width="80" height="80" viewBox="0 0 80 80">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none"
+        stroke="#b5f23d" stroke-width="${strokeW}"
+        stroke-dasharray="${receiveDash} ${feeDash}"
+        stroke-dashoffset="${circ * 0.25}"
+        style="transition:stroke-dasharray 0.5s ease;" />
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none"
+        stroke="#ff6b6b" stroke-width="${strokeW}"
+        stroke-dasharray="${feeDash} ${receiveDash}"
+        stroke-dashoffset="${circ * 0.25 - receiveDash}"
+        style="transition:stroke-dasharray 0.5s ease;" />
+      <text x="${cx}" y="${cy+1}" text-anchor="middle" dominant-baseline="middle"
+        fill="#e8edd8" font-family="Syne,sans-serif" font-size="10" font-weight="800">
+        ${(100 - feeRatio*100).toFixed(1)}%
+      </text>
+      <text x="${cx}" y="${cy+12}" text-anchor="middle" dominant-baseline="middle"
+        fill="#6b7560" font-family="DM Mono,monospace" font-size="7">
+        yours
+      </text>
+    </svg>
+    <div class="donut-legend">
+      <div class="legend-item">
+        <div class="legend-dot" style="background:var(--green)"></div>
+        <span>You receive &nbsp;<span class="legend-val">${fmt(receive,currency)}</span></span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:var(--danger)"></div>
+        <span>FW fee &nbsp;<span class="legend-val">${fmt(fee,currency)}</span></span>
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════
+// SETUP TOGGLES
+// ═══════════════════════════════════════
+function setupToggles(groupId, cb) {
+  document.getElementById(groupId).querySelectorAll('.toggle-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById(groupId).querySelectorAll('.toggle-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      cb(btn.dataset.value);
+    });
+  });
+}
+setupToggles('paymentType', val => { selectedPayment = val; });
+setupToggles('businessType', val => { selectedBusiness = val; });
+
+document.getElementById('currencySelect').addEventListener('change', function() {
+  document.getElementById('currencyPrefix').textContent = CURRENCY_SYMBOLS[this.value] || this.value;
+});
+document.getElementById('amountInput').addEventListener('keydown', e => { if(e.key==='Enter') calculate(); });
+
+// Reverse toggle
+document.getElementById('directionToggle').addEventListener('click', function() {
+  isReverse = !isReverse;
+  this.classList.toggle('on', isReverse);
+  document.getElementById('amountLabel').textContent = isReverse ? 'Amount I Want to Receive' : 'Amount to Charge';
+  document.getElementById('directionLabel').textContent = isReverse
+    ? 'Reverse: I want to receive exactly…'
+    : 'Forward: I want to charge…';
+  document.getElementById('directionSub').textContent = isReverse
+    ? 'App will calculate what to charge the customer'
+    : 'Toggle to find what to charge to receive a specific amount';
+  document.getElementById('amountInput').placeholder = isReverse ? 'Desired amount' : '0.00';
+  // hide results
+  ['singleResult','compareResult','bulkResult'].forEach(id =>
+    document.getElementById(id).classList.remove('visible'));
+});
+
+// Mode switching
+function switchMode(mode, btn) {
+  currentMode = mode;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('bulkFields').style.display = mode === 'bulk' ? 'block' : 'none';
+  ['singleResult','compareResult','bulkResult'].forEach(id =>
+    document.getElementById(id).classList.remove('visible'));
+}
+
+// ═══════════════════════════════════════
+// CALCULATE
+// ═══════════════════════════════════════
+function calculate() {
+  const amountRaw = parseFloat(document.getElementById('amountInput').value);
+  const currency  = document.getElementById('currencySelect').value;
+  const amountInput = document.getElementById('amountInput');
+  const errorEl = document.getElementById('amountError');
+
+  if (isNaN(amountRaw) || amountRaw <= 0) {
+    amountInput.classList.add('error'); errorEl.classList.add('show'); return;
+  }
+  amountInput.classList.remove('error'); errorEl.classList.remove('show');
+
+  const btn = document.getElementById('calcBtn');
+  btn.classList.add('pulse'); setTimeout(() => btn.classList.remove('pulse'), 450);
+
+  if (currentMode === 'single') calcSingle(amountRaw, currency);
+  if (currentMode === 'compare') calcCompare(amountRaw, currency);
+  if (currentMode === 'bulk')    calcBulk(amountRaw, currency);
+}
+
+// ── SINGLE ──────────────────────────────
+function calcSingle(amount, currency) {
+  const rule = FEE_RULES[selectedPayment];
+  let calc, displayAmount, chargeAmount;
+
+  if (isReverse) {
+    const rev = reverseCalc(selectedPayment, currency, amount, selectedBusiness);
+    if (!rev) { showUnsupported('singleResult','singleTag', rule?.label, currency); return; }
+    calc = rev;
+    displayAmount = rev.charge;
+    chargeAmount = rev.charge;
+    document.getElementById('singleModeLabel').textContent = 'Reverse Breakdown';
+  } else {
+    calc = computeFee(selectedPayment, currency, amount, selectedBusiness);
+    if (!calc) { showUnsupported('singleResult','singleTag', rule?.label, currency); return; }
+    displayAmount = amount;
+    chargeAmount = amount;
+  }
+
+  const rows = isReverse ? [
+    { label:'You want to receive',    value: fmt(amount, currency),         cls:'' },
+    { label:'Charge your customer',   value: fmt(chargeAmount, currency),    cls:'highlight' },
+    { label:`Fee (${calc.feeNote})`,  value:`– ${fmt(calc.fee, currency)}`,  cls:'fee' },
+    { label:'You receive (net)',       value: fmt(calc.receive, currency),    cls:'' },
+    { label:'Effective rate',          value:`${calc.effectiveRate}%`,       cls:'' },
+  ] : [
+    { label:'You charge customer',    value: fmt(displayAmount, currency),   cls:'' },
+    { label:`Fee (${calc.feeNote})`,  value:`– ${fmt(calc.fee, currency)}`,  cls:'fee' },
+    { label:'You receive',            value: fmt(calc.receive, currency),    cls:'highlight' },
+    { label:'Effective rate',          value:`${calc.effectiveRate}%`,       cls:'' },
+  ];
+
+  renderRows('singleRows', rows);
+  document.getElementById('singleTag').textContent = rule.label;
+  document.getElementById('singleSettleText').textContent =
+    `Settlement: ${calc.settlement}. Funds typically arrive within this window on business days.`;
+  document.getElementById('singleRecText').textContent =
+    getRecommendation(selectedPayment, currency, chargeAmount, calc.fee);
+
+  renderDonut(calc.fee, calc.receive, currency);
+
+  // FX conversion for non-NGN
+  const fxRow = document.getElementById('fxResultRow');
+  if (currency !== 'NGN' && fxRates[currency]) {
+    const ngnEquiv = calc.receive * fxRates[currency];
+    fxRow.style.display = 'block';
+    fxRow.innerHTML = `
+      <span style="color:var(--muted);font-size:10px;">≈ NGN equivalent after fees</span><br/>
+      <strong>${fmt(ngnEquiv, 'NGN')}</strong>
+      <span style="font-size:10px;color:var(--muted);"> at 1${currency} = ₦${Math.round(fxRates[currency]).toLocaleString()}</span>`;
+  } else {
+    fxRow.style.display = 'none';
+  }
+
+  showCard('singleResult');
+
+  lastCalc = {
+    mode: 'single', isReverse,
+    amount, chargeAmount, currency,
+    method: selectedPayment, calc,
+    methodLabel: rule.label, settlement: calc.settlement
+  };
+}
+
+// ── COMPARE ─────────────────────────────
+function calcCompare(amount, currency) {
+  const methods = ['card','bank_transfer','ussd','mobile_money'];
+  let results = methods.map(m => {
+    const calc = isReverse
+      ? reverseCalc(m, currency, amount, selectedBusiness)
+      : computeFee(m, currency, amount, selectedBusiness);
+    return { method:m, label:FEE_RULES[m].label, calc };
+  });
+
+  const available = results.filter(r => r.calc !== null);
+  const bestFee = available.length ? Math.min(...available.map(r => r.calc.fee)) : null;
+
+  document.getElementById('compareGrid').innerHTML = results.map((r, i) => {
+    const avail = r.calc !== null;
+    const isBest = avail && r.calc.fee === bestFee;
+    const chargeOrReceive = isReverse && r.calc ? r.calc.charge : (r.calc ? amount : null);
+    return `
+      <div class="compare-cell ${isBest?'best':''} ${!avail?'unavailable':''}" style="animation-delay:${i*0.06}s">
+        <div class="cell-method">${r.label}</div>
+        ${avail ? `
+          <div class="cell-fee">– ${fmt(r.calc.fee, currency)}</div>
+          <div class="cell-receive">${isReverse ? 'Charge' : 'You get'}<br/><strong>${fmt(isReverse ? r.calc.charge : r.calc.receive, currency)}</strong></div>
+          <div class="cell-settle">${r.calc.settlement}</div>
+          ${isBest ? '<div class="best-badge">Lowest Fee</div>' : ''}
+        ` : `
+          <div class="cell-fee" style="font-size:12px;color:var(--muted)">N/A</div>
+          <div class="cell-receive" style="font-size:10px;color:var(--muted)">Not available<br/>for ${currency}</div>
+          <div class="cell-settle">—</div>
+        `}
+      </div>`;
+  }).join('');
+
+  document.getElementById('compareTag').textContent = currency;
+  showCard('compareResult');
+  lastCalc = { mode:'compare', amount, currency, results };
+}
+
+// ── BULK ─────────────────────────────────
+function calcBulk(amount, currency) {
+  const countRaw = parseInt(document.getElementById('txnCount').value);
+  const count = isNaN(countRaw) || countRaw < 1 ? 1 : countRaw;
+  const biz = document.getElementById('businessName').value.trim() || 'Your Business';
+  const rule = FEE_RULES[selectedPayment];
+
+  const calc = computeFee(selectedPayment, currency, amount, selectedBusiness);
+  if (!calc) { showUnsupported('bulkResult','bulkTag', rule?.label, currency); return; }
+
+  const totalGross = amount * count;
+  const totalFee   = calc.fee * count;
+  const totalNet   = calc.receive * count;
+
+  document.getElementById('bulkNet').textContent = fmt(totalNet, currency);
+  document.getElementById('bulkSubtitle').textContent =
+    `Net after fees · ${count.toLocaleString()} transaction${count>1?'s':''} of ${fmt(amount, currency)} via ${rule.label}`;
+
+  document.getElementById('bulkRows').innerHTML = [
+    { lbl:'Total charged to customers', val:fmt(totalGross, currency), cls:'' },
+    { lbl:`Total fees (${count} × ${fmt(calc.fee,currency)})`, val:`– ${fmt(totalFee, currency)}`, cls:'r' },
+    { lbl:'Total you receive', val:fmt(totalNet, currency), cls:'g' },
+    { lbl:'Effective fee rate', val:`${calc.effectiveRate}% per transaction`, cls:'' },
+    { lbl:'Settlement window', val:calc.settlement, cls:'' },
+    { lbl:'Flutterwave product', val:rule.label, cls:'' },
+  ].map(r => `
+    <div class="bulk-row">
+      <span class="lbl">${r.lbl}</span>
+      <span class="val ${r.cls}">${r.val}</span>
+    </div>`).join('');
+
+  // FX for bulk
+  if (currency !== 'NGN' && fxRates[currency]) {
+    const ngnNet = totalNet * fxRates[currency];
+    document.getElementById('bulkRows').innerHTML += `
+      <div class="bulk-row">
+        <span class="lbl">≈ NGN equivalent (net)</span>
+        <span class="val" style="color:var(--blue)">${fmt(ngnNet,'NGN')}</span>
+      </div>`;
+  }
+
+  document.getElementById('bulkTag').textContent = `${count} Txns`;
+  showCard('bulkResult');
+
+  lastCalc = { mode:'bulk', amount, currency, count, totalGross, totalFee, totalNet,
+    method:selectedPayment, calc, methodLabel:rule.label, bizName:biz, settlement:calc.settlement };
+}
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function renderRows(id, rows) {
+  document.getElementById(id).innerHTML = rows.map(r => `
+    <div class="result-row">
+      <span class="row-label">${r.label}</span>
+      <span class="row-value ${r.cls}">${r.value}</span>
+    </div>`).join('');
+}
+
+function showCard(id) {
+  const card = document.getElementById(id);
+  card.classList.remove('visible'); void card.offsetWidth; card.classList.add('visible');
+  card.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function showUnsupported(cardId, tagId, label, currency) {
+  if (cardId === 'singleResult') {
+    renderRows('singleRows', [{ label:'Status', value:'Not supported', cls:'fee' }]);
+    document.getElementById(tagId).textContent = label || 'N/A';
+    document.getElementById('singleSettleText').textContent =
+      `${label} is not available for ${currency}. Try Card or Bank Transfer.`;
+    document.getElementById('singleRecText').textContent =
+      `Switch to Card Payment or Bank Transfer for ${currency} collections.`;
+    document.getElementById('donutWrap').innerHTML = '';
+    document.getElementById('fxResultRow').style.display = 'none';
+  } else {
+    document.getElementById(tagId).textContent = label || 'N/A';
+  }
+  showCard(cardId);
+}
+
+// ═══════════════════════════════════════
+// COPY RESULT
+// ═══════════════════════════════════════
+function copyResult() {
+  const c = lastCalc;
+  if (!c || !c.currency) return;
+
+  let text = '';
+  if (c.mode === 'single') {
+    text = c.isReverse
+      ? `FW Fee Calculator — Reverse\nDesired: ${fmt(c.amount,c.currency)}\nCharge customer: ${fmt(c.chargeAmount,c.currency)}\nFee: ${fmt(c.calc.fee,c.currency)}\nYou receive: ${fmt(c.calc.receive,c.currency)}\nRate: ${c.calc.effectiveRate}%\nMethod: ${c.methodLabel}`
+      : `FW Fee Calculator\nCharge: ${fmt(c.chargeAmount,c.currency)}\nFee: ${fmt(c.calc.fee,c.currency)}\nYou receive: ${fmt(c.calc.receive,c.currency)}\nRate: ${c.calc.effectiveRate}%\nMethod: ${c.methodLabel}`;
+  } else if (c.mode === 'bulk') {
+    text = `FW Bulk Estimate\n${c.count} × ${fmt(c.amount,c.currency)}\nTotal gross: ${fmt(c.totalGross,c.currency)}\nTotal fees: ${fmt(c.totalFee,c.currency)}\nTotal net: ${fmt(c.totalNet,c.currency)}`;
+  }
+  text += '\njidsflutterwavefeecalculator.vercel.app';
+
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    const lbl = document.getElementById('copyBtnLabel');
+    btn.classList.add('copied');
+    lbl.textContent = 'Copied!';
+    setTimeout(() => { btn.classList.remove('copied'); lbl.textContent = 'Copy Result'; }, 2000);
+  });
+}
+
+// ═══════════════════════════════════════
+// PDF EXPORT
+// ═══════════════════════════════════════
+function exportPDF(mode) {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-NG', { year:'numeric', month:'long', day:'numeric' });
+  const timeStr = now.toLocaleTimeString('en-NG', { hour:'2-digit', minute:'2-digit' });
+  document.getElementById('receiptDate').textContent = `${dateStr} at ${timeStr}`;
+
+  const c = lastCalc;
+  if (!c || !c.currency) return;
+
+  if (mode === 'single') {
+    document.getElementById('receiptBadge').textContent =
+      `${c.isReverse ? 'Reverse Calc · ' : ''}${c.methodLabel || ''}`;
+    document.getElementById('receiptMeta').innerHTML =
+      `Currency: ${c.currency}<br/>Method: ${c.methodLabel || '—'}<br/>Date: ${dateStr}`;
+
+    const rows = c.isReverse ? `
+      <tr><td>You Want to Receive</td><td>${fmt(c.amount, c.currency)}</td></tr>
+      <tr><td>Charge Customer</td><td>${fmt(c.chargeAmount, c.currency)}</td></tr>
+      <tr class="fee-row"><td>Flutterwave Fee</td><td>– ${fmt(c.calc.fee, c.currency)}</td></tr>
+      <tr><td>Effective Rate</td><td>${c.calc.effectiveRate}%</td></tr>
+      <tr><td>Settlement</td><td>${c.calc.settlement}</td></tr>
+      <tr class="receive-row total"><td>You Receive (Net)</td><td>${fmt(c.calc.receive, c.currency)}</td></tr>`
+    : `
+      <tr><td>Transaction Amount</td><td>${fmt(c.chargeAmount, c.currency)}</td></tr>
+      <tr class="fee-row"><td>Flutterwave Fee</td><td>– ${fmt(c.calc.fee, c.currency)}</td></tr>
+      <tr><td>Effective Rate</td><td>${c.calc.effectiveRate}%</td></tr>
+      <tr><td>Settlement</td><td>${c.calc.settlement}</td></tr>
+      <tr class="receive-row total"><td>You Receive</td><td>${fmt(c.calc.receive, c.currency)}</td></tr>`;
+
+    document.getElementById('receiptTable').innerHTML = rows;
+  }
+
+  if (mode === 'compare') {
+    document.getElementById('receiptBadge').textContent = 'Compare All Methods';
+    document.getElementById('receiptMeta').innerHTML =
+      `Currency: ${c.currency}<br/>Amount: ${fmt(c.amount, c.currency)}<br/>Date: ${dateStr}`;
+    document.getElementById('receiptTable').innerHTML = c.results.map(r =>
+      r.calc
+        ? `<tr><td>${r.label}</td><td>Fee: ${fmt(r.calc.fee,c.currency)} → Get ${fmt(r.calc.receive,c.currency)}</td></tr>`
+        : `<tr><td>${r.label}</td><td>Not available for ${c.currency}</td></tr>`
+    ).join('');
+  }
+
+  if (mode === 'bulk') {
+    document.getElementById('receiptBadge').textContent = `Bulk Invoice — ${(c.count||1).toLocaleString()} Transactions`;
+    document.getElementById('receiptMeta').innerHTML =
+      `Business: ${c.bizName||'—'}<br/>Currency: ${c.currency}<br/>Date: ${dateStr}`;
+    document.getElementById('receiptTable').innerHTML = `
+      <tr><td>Amount per Transaction</td><td>${fmt(c.amount, c.currency)}</td></tr>
+      <tr><td>Number of Transactions</td><td>${(c.count||1).toLocaleString()}</td></tr>
+      <tr><td>Total Charged to Customers</td><td>${fmt(c.totalGross, c.currency)}</td></tr>
+      <tr class="fee-row"><td>Total Flutterwave Fees</td><td>– ${fmt(c.totalFee, c.currency)}</td></tr>
+      <tr><td>Payment Method</td><td>${c.methodLabel || '—'}</td></tr>
+      <tr><td>Settlement</td><td>${c.settlement || '—'}</td></tr>
+      <tr class="receive-row total"><td>Total You Receive</td><td>${fmt(c.totalNet, c.currency)}</td></tr>`;
+  }
+
+  window.print();
+}
+
+// ═══════════════════════════════════════
+// PWA — INSTALL PROMPT
+// ═══════════════════════════════════════
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstall = e;
+  document.getElementById('installBanner').classList.add('show');
+});
+
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if (!deferredInstall) return;
+  deferredInstall.prompt();
+  const { outcome } = await deferredInstall.userChoice;
+  deferredInstall = null;
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+document.getElementById('dismissInstall').addEventListener('click', () => {
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+// ═══════════════════════════════════════
+// SERVICE WORKER REGISTRATION
+// ═══════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+fetchFX();
+</script>
+</body>
+</html>
